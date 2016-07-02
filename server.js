@@ -31,14 +31,14 @@ app.use(morgan('dev'));
 
 // set static files location
 // used for requests that our frontend will make
-app.use(express.static(__dirname + '/public'));
+app.use(express.static(__dirname));
 
 // API ROUTES
 // ====================================
 
 // send user to main page
-app.get('*', function(req, res) {
-	res.sendFile(path.join(__dirname + '/public/app/views/index.html'));
+app.get('/', function(req, res) {
+	res.sendFile(path.join(__dirname + '/public/app/index.html'));
 });
 
 // START SERVER

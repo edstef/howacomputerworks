@@ -1,84 +1,56 @@
-var gulp = require('gulp'),
-    sass = require('gulp-sass'),
-    cssnano = require('gulp-cssnano'),
-    jshint = require('gulp-jshint'),
-    uglify = require('gulp-uglify'),
-    imagemin = require('gulp-imagemin'),
-    htmlmin = require('gulp-htmlmin'),
-    rename = require('gulp-rename'),
-    notify = require('gulp-notify'),
-    cache = require('gulp-cache'),
-    livereload = require('gulp-livereload'),
-    del = require('del');
+var gulp = require('gulp');
+var config = require('./gulp.config')();
+var del = require('del');
+var angularFilesort = require('gulp-angular-filesort');
+var $ = require('gulp-load-plugins')({lazy: true});
 
-// Various paths to be sourced into the gulp tasks below
-
-var paths = {
-	scripts: ['public/assets/javascript/**/*.js', 'public/app/*.js', 'public/app/controllers/**/*.js', 'public/app/services/**/*.js', '!public/assets/javascript/angular-css.min.js', '!public/assets/javascript/angular-ui-router.min.js'],
-	styles: ['public/assets/css/**/*.scss'],
-	views: ['public/app/views/pages/**/*.html'],
-	fonts: ['public/assets/fonts/Helvetica Neue/*.otf']
-};
-
-var pathConcat = paths.scripts.concat(paths.styles, paths.views, paths.fonts);
-
-// task for converting sass to css and minifying the css
-
-gulp.task('styles', function() {
-	return gulp.src(paths.styles)
-	.pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
-	.pipe(rename({suffix: '.min'}))
-	.pipe(gulp.dest('public/assets/css'))
-	.pipe(notify({message: 'Stylesheets have been converted to .sass and minified.'}));
+gulp.task('vet', function() {
+	console.log('Analyzing source with jshint');
+	gulp.src(config.alljs)
+		.pipe($.jshint())
+		.pipe($.jshint.reporter('jshint-stylish', {verbose: true}));
 });
 
-// task to JShint all the user-written javascript
-
-gulp.task('scripts', function() {
-	return gulp.src(paths.scripts)
-	.pipe(jshint('.jshintrc'))
-	.pipe(jshint.reporter('jshint-stylish'))
-	.pipe(gulp.dest('public/dist/app/javascript'))
-	.pipe(rename({suffix: '.min'}))
-	.pipe(uglify())
-	.pipe(gulp.dest('public/dist/app/javascript'))
-	.pipe(notify({message: 'JS files have been linted and uglified.'}));
+gulp.task('styles', ['clean-styles'], function() {
+	console.log('Compiling SASS to CSS');
+	return gulp.src(config.sass)
+	.pipe($.sass({outputStyle: 'compressed'}).on('error', $.sass.logError))
+	.pipe($.rename({suffix: '.min'}))
+	.pipe(gulp.dest(config.temp));
 });
 
-// task to compress all images
-
-gulp.task('images', function() {
-	return gulp.src('public/assets/images/**/*')
-	.pipe(cache(imagemin({optimizationLevel: 3, progressive: true, interlaced: true})))
-	.pipe(gulp.dest('public/dist/assets/images'))
-	.pipe(notify({message: 'Images have been compressed.'}));
+gulp.task('clean-styles', function() {
+	var files = config.temp + '**/*.css';
+	clean(files);
 });
 
-// task to minify all the view pages of the application
-
-gulp.task('minifyViews', function() {
-	return gulp.src(paths.views)
-	.pipe(htmlmin({collapseWhitespace: true}))
-	.pipe(gulp.dest('public/dist/app/views/pages'))
-	.pipe(notify({message: 'Views have been minified.'}));
+gulp.task('sass-watcher', function() {
+	gulp.watch([config.sass], ['styles']);
 });
 
-// task to move files that do not need processing to dist/ directory
+gulp.task('wiredep', function() {
+	console.log('Wire up the bower css, js, and our app js into the html');
+	var options = config.getWiredepDefaultOptions();
+	var wiredep = require('wiredep').stream;
 
-gulp.task('moveFiles', function() {
-	gulp.src('public/app/views/index.html').pipe(gulp.dest('public/dist/app/views')).pipe(notify({message: 'index.html moved to dist/ folder'}));
-	gulp.src(['public/assets/javascript/angular-ui-router.min.js', 'public/assets/javascript/angular-css.min.js']).pipe(gulp.dest('public/dist/app/javascript')).pipe(notify({message: 'JS files moved to dist/ folder'}));
-	gulp.src(paths.fonts).pipe(gulp.dest('public/dist/assets/fonts')).pipe(notify({message: 'Font files moved to dist/ folder'}));
+	return gulp
+		.src(config.index)
+		.pipe(wiredep(options))
+		.pipe($.inject(gulp.src(config.js).pipe(angularFilesort())))
+		.pipe(gulp.dest('public/app'));
+
 });
 
-// watch task to reload the files when changes are present
+gulp.task('inject', ['wiredep', 'styles'], function() {
+	console.log('Wire up the app css, into the html, and call wiredep');
+	return gulp
+		.src(config.index)
+		.pipe($.inject(gulp.src(config.css)))
+		.pipe(gulp.dest('public/app'));
 
-gulp.task('watch', function() {
-	gulp.watch('public/assets/css/**/*.scss', ['styles']);
-	livereload.listen();
-	gulp.watch(paths.styles).on('change', livereload.changed);
 });
 
-gulp.task('default', function() {
-	gulp.start('styles', 'watch');
-});
+function clean(path) {
+	console.log('Cleaning: ' + path);
+	del(path);
+}

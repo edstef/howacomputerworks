@@ -1,7 +1,11 @@
-'use strict';
+(function() {
+	'use strict';
 
-appControllers.controller('HomeController', HomeController);
+	angular.module('homeController', [])
+	.controller('HomeController', HomeController);
 
-function HomeController() {
-	var vm = this;
-}
+	function HomeController() {
+		var vm = this;
+	}
+
+}());

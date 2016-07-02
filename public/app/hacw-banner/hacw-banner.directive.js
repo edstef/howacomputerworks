@@ -1,10 +1,13 @@
-'use strict';
+(function() {
+	'use strict';
 
-appDirectives.directive('hacwBanner', hacwBanner);
+	angular.module('hacw-banner', [])
+	.directive('hacwBanner', hacwBanner);
 
-function hacwBanner() {
-	return {
-		restrict: 'E',
-		templateUrl: 'app/hacw-banner/hacw-banner.html'
-	};
-}
+	function hacwBanner() {
+		return {
+			restrict: 'E',
+			templateUrl: 'app/hacw-banner/hacw-banner.html'
+		};
+	}
+}());

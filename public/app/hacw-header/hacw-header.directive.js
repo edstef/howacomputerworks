@@ -1,16 +1,19 @@
-'use strict';
+(function() {
+	'use strict';
 
-/**
-* @desc hacw-header directive that contains custom header elements
-* @example <hacw-header></hacw-header>
-*/
+	/**
+	* @desc hacw-header directive that contains custom header elements
+	* @example <hacw-header></hacw-header>
+	*/
 
+	angular.module('hacw-header', [])
+	.directive('hacwHeader', hacwHeader);
 
-appDirectives.directive('hacwHeader', hacwHeader);
+	function hacwHeader() {
+		return {
+			restrict: 'E',
+			templateUrl: '/public/app/hacw-header/hacw-header.html'
+		};
+	}
 
-function hacwHeader() {
-	return {
-		restrict: 'E',
-		templateUrl: 'app/hacw-header/hacw-header.html'
-	};
-}
+}());
